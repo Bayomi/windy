@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		 <link rel="stylesheet" href="css/bootstrap.min.css">
+		<style>
+			canvas {
+			    background: #fff;
+			    margin: 20px;
+			    margin-left: 5%;
+			    float: left;
+			}
+
+			.form-group-min {
+			    width: 220px;
+			    display: inline-block;
+			    padding-right: 20px;
+			    padding-bottom: 10px;
+			  }
+
+			  .form-group-rate {
+			    width: 145px;
+			    display: inline-block;
+			    padding-right: 20px;
+			    padding-bottom: 10px;
+			  }
+
+			  .form-group-iter {
+			  	display: inline-block;
+			    width: 180px;
+			    padding: 10px;
+			  }
+
+			  .container.params {
+			    width: 480px;
+			    border: 1px solid black;
+			    float: right;
+			    margin-top: 2%;
+			    margin-right: 2%;
+			  }
+
+			  .paramsForm {
+			    width: 100%;
+			  }
+
+			  .btn-primary {
+			    margin-bottom: 10px;
+			  }
+
+		</style>
+		<title>Windy Gridworld</title>
+		<meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="js/bootstrap.min.js"></script>
+	</head>
+
+	<body>
+
+		<div class="container params">
+		  <h2>Parameters</h2>
+		  <form role="form" action="javascript:void(0);" class="paramsForm">
+		    <div class="form-group-rate">
+		      <label for="iterations">Learning rate:</label>
+		      <input class="form-control" id="mu" placeholder="0.1">
+		    </div>
+
+		    <div class="form-group-rate">
+		      <label for="iterations">Epsilon:</label>
+		      <input class="form-control" id="epsilon" placeholder="0.1">
+		    </div>
+
+		    <div class="form-group-rate">
+		      <label for="iterations">Gamma:</label>
+		      <input class="form-control" id="gamma" placeholder="0.9">
+		    </div>
+
+		    <div class="form-group-iter">
+		      <label for="iterations">Number of Iterations:</label>
+		      <input class="form-control" id="iterations" placeholder="8000">
+		    </div>
+
+		    <div class="form-group-iter">
+			  <label for="sel1">Select method:</label>
+			  <select class="form-control" id="method">
+			    <option value="sarsa">Sarsa</option>
+			    <option value="q">Q-Learning</option>
+			  </select>
+			</div>
+
+		    <div class="form-group-min">
+		      <label for="iterations">Show iterations starting from:</label>
+		      <input class="form-control" id="start" placeholder="0">
+		    </div>
+
+		    <div class="form-group-min">
+		      <label for="iterations">Show iterations ending at:</label>
+		      <input class="form-control" id="end" placeholder="8000">
+		    </div>
+
+		    <div class="form-group">
+		      <label for="iterations">Speed (milisseconds):</label>
+		      <input class="form-control" id="speed" placeholder="100">
+		    </div>
+
+		    <button type="submit" id="learn" class="btn btn-primary">Learn</button>
+		    <button type="submit" id="final" class="btn btn-primary">Show final convergence result</button>
+		  </form>
+		</div>
+
+		<script src="js/jquery.js"></script>
+		<script src="js/board.js"></script>
+		<script src="algo/sarsa.js"></script>
+    </body>
+    <script>
+
+$("#learn").click(function(){
+  var mu = Number($('#mu').val()) || 0.1;
+  var epsilon = Number($('#epsilon').val()) || 0.1;
+  var gamma = Number($('#gamma').val()) || 0.9;
+  var iterations = parseInt($('#iterations').val()) || 8000;
+  var min_val = checkInterval(parseInt($('#start').val())) || 0;
+  var max_val = checkInterval(parseInt($('#end').val())) || iterations;
+  var timeout_val = parseInt($('#speed').val()) || 100;
+
+  var method = $('#method').val()
+
+  console.log(method);
+
+  console.log(mu);
+  console.log(epsilon);
+  console.log(gamma);
+  console.log(iterations);
+  console.log(min_val);
+  console.log(max_val);
+  console.log(timeout_val);
+
+  if(method == "sarsa") {
+  	sarsa(mu, gamma, epsilon, iterations, timeout_val, min_val, max_val, false);
+  } else {
+  	q_learn(mu, gamma, epsilon, iterations, timeout_val, min_val, max_val, false);
+  }
+
+  function checkInterval(integ) {
+    var max = iterations;
+
+    if(integ>max) {
+      return max;
+    } else if(integ<0) {
+      return 0;
+    } else {
+      return integ;
+    }
+  }
+    
+});
+
+$("#final").click(function(){
+  var mu = Number($('#mu').val()) || 0.1;
+  var epsilon = Number($('#epsilon').val()) || 0.1;
+  var gamma = Number($('#gamma').val()) || 0.9;
+  var iterations = parseInt($('#iterations').val()) || 8000;
+  var min_val = iterations;
+  var max_val = iterations;
+  var timeout_val = 500;
+
+  var method = $('#method').val()
+
+  console.log(method);
+
+  console.log(mu);
+  console.log(epsilon);
+  console.log(gamma);
+  console.log(iterations);
+  console.log(min_val);
+  console.log(max_val);
+  console.log(timeout_val);
+
+  if(method == "sarsa") {
+  	sarsa(mu, gamma, epsilon, iterations, timeout_val, min_val, max_val, true);
+  } else {
+  	q_learn(mu, gamma, epsilon, iterations, timeout_val, min_val, max_val, true);
+  }
+
+
+  function checkInterval(integ) {
+    var max = iterations;
+
+    if(integ>max) {
+      return max;
+    } else if(integ<0) {
+      return 0;
+    } else {
+      return integ;
+    }
+  }
+    
+});
+
+
+/*
+Learning method SARSA
+*/
+
+//initial parameters
+
+var actionFinal = [];
+var temp = new Grid(10, 7, 55, 0, 3, 7, 3);
+temp.drawBoard();
+temp.drawVisit();
+
+/*
+q_learn(0.1, 0.9, 0.1, 8000, 100, 7998, 8000);
+console.log(actionFinal)
+*/
+
+function getResultMove() {
+
+	var queue = new Queue;
+	var grid = new Grid(10, 7, 55, 0, 3, 7, 3);
+	grid.reset();
+
+	queue.add(function(){
+	    grid.makePath(1000, actionFinal);
+	});
+}
+
+function sarsa(mu_value, gamma_value, epsilon_value, iterations_value, timeout_value, min_show, max_show, flag) {
+	$('canvas').remove();
+	var mu = mu_value;
+	var gamma = gamma_value;
+	var epsilon = epsilon_value;
+	var initial_state = new _State(0, 3);
+	var Q = new _Q(70, 4, 10, 7, initial_state);
+
+	var queue = new Queue;
+	var grid = new Grid(10, 7, 55, 0, 3, 7, 3);
+	grid.drawBoard();
+
+	var t = 0;
+	for(var i=0; i<iterations_value; i++){
+		var initial_state = new _State(0, 4);
+		Q.goToState(initial_state);
+
+		var rand = Math.random();
+		if (rand<epsilon){
+			var action = new _Action().random();
+		} else{
+			var action = Q.getBestAction();
+		}
+
+		var actionArray = [];
+		var loop = 0;
+		while (!Q.isTerminal()) {
+
+			var oldX = Q.getCurrentState().x;
+			var oldY = Q.getCurrentState().y;
+
+			var oldState = new _State(oldX, oldY);
+
+			var reward = Q.updateCurrentState(action).reward();
+		    var statePrime = Q.getCurrentState();
+		    
+		    //epsilon-greedy
+		    var rand = Math.random();
+		    if (rand<epsilon){
+				var actionPrime = new _Action().random();
+			} else{
+				var actionPrime = Q.getBestAction();
+			}
+
+			var newValue = Q.getValue(oldState, action) + (mu*(reward + (gamma*(Q.getValue(statePrime, actionPrime))) - (Q.getValue(oldState, action))));
+
+			Q.updateValue(oldState, action, newValue);
+
+			actionArray.push(action.direction);
+		    action = actionPrime;
+		    t++;
+		    loop++;
+		}
+
+		console.log(actionArray);
+		console.log('loop: '+loop);
+		console.log('iteration: '+i);
+
+		if((i>=min_show) && (i<(max_show+1))) {
+			queue.add(function(){
+				actionArray.unshift("");
+			    grid.makePath(timeout_value, actionArray);
+			});
+		}
+		
+	}
+
+	console.log('END');
+	if(flag){
+		console.log(Q.getFinalResultMoves());
+		actionFinal = Q.getFinalResultMoves();
+		queue.add(function(){
+			actionFinal.unshift("");
+		    grid.makePath(timeout_value, actionFinal);
+		});
+	}
+}
+
+function q_learn(mu_value, gamma_value, epsilon_value, iterations_value, timeout_value, min_show, max_show, flag) {
+
+	$('canvas').remove();
+	var mu = mu_value;
+	var gamma = gamma_value;
+	var epsilon = epsilon_value;
+	var initial_state = new _State(0, 3);
+	var Q = new _Q(70, 4, 10, 7, initial_state);
+
+	var queue = new Queue;
+	var grid = new Grid(10, 7, 55, 0, 3, 7, 3);
+	grid.drawBoard();
+
+	var t = 0;
+	for(var i=0; i<iterations_value; i++){
+		var initial_state = new _State(0, 4);
+		Q.goToState(initial_state);
+
+		var actionArray = [];
+		var loop = 0;
+		while (!Q.isTerminal()) {
+
+			var rand = Math.random();
+			if (rand<epsilon){
+				var action = new _Action().random();
+			} else{
+				var action = Q.getBestAction();
+			}
+
+			var oldX = Q.getCurrentState().x;
+			var oldY = Q.getCurrentState().y;
+
+			var oldState = new _State(oldX, oldY);
+
+			var reward = Q.updateCurrentState(action).reward();
+		    var statePrime = Q.getCurrentState();
+			var actionPrime = Q.getBestAction();
+
+			var newValue = Q.getValue(oldState, action) + (mu*(reward + (gamma*(Q.getValue(statePrime, actionPrime))) - (Q.getValue(oldState, action))));
+
+
+			Q.updateValue(oldState, action, newValue);
+
+			actionArray.push(action.direction);
+		    t++;
+		    loop++;
+		}
+
+		console.log(actionArray);
+		console.log('loop: '+loop);
+		console.log('iteration: '+i);
+
+		if((i>=min_show) && (i<(max_show+1))) {
+			queue.add(function(){
+				actionArray.unshift("");
+			    grid.makePath(timeout_value, actionArray);
+			});
+		}
+		
+	}
+	console.log('END');
+
+	if(flag){
+		console.log(Q.getFinalResultMoves());
+		actionFinal = Q.getFinalResultMoves();
+		queue.add(function(){
+			actionFinal.unshift("");
+		    grid.makePath(timeout_value, actionFinal);
+		});
+	}
+}
+
+
+
+
+
+
+	</script>
+</html>
