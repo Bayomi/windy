@@ -105,16 +105,16 @@
 		    <button type="submit" id="final" class="btn btn-primary">Show final convergence result</button>
 		  </form>
 		</div>
+		
+		<div>
+			Description of the problem: <a href="https://github.com/adilansari/Windy-Grid-World-Q-Learning"> here!</a>.
+		</div>
 
 		<script src="js/jquery.js"></script>
 		<script src="js/board.js"></script>
 		<script src="algo/sarsa.js"></script>
     </body>
     <script>
-	    
-var message = 'Photo of the problem: http://www.dia.fi.upm.es/~jdlope/images/gridworld.png . Description of the problem: https://github.com/adilansari/Windy-Grid-World-Q-Learning' 
-
-alert(message);
 	    
 $("#learn").click(function(){
   var mu = Number($('#mu').val()) || 0.1;
